@@ -53,13 +53,14 @@ def get_enum_props(ecursor):
     }
 
 
-
 def generate_all_enums_code(enums, output):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir_path))
     template = env.get_template("from_string.hh.jinja")
 
-    props = { "enums": [get_enum_props(e) for e in enums] }
+    props = {
+        "enums": [get_enum_props(e) for e in enums],
+    }
     print(template.render(**props), file=output)
 
 

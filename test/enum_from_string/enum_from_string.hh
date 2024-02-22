@@ -1,3 +1,5 @@
+#pragma once
+
 namespace ipc {
 
 enum class [[clang::annotate("from_string")]] Message {
