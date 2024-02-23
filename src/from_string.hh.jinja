@@ -15,10 +15,10 @@ template<typename T>
 std::array<std::pair<const char *, T>, n_enum_members<T>> enum_members;
 
 template<typename T>
-std::string to_string(T value);
+inline constexpr std::string_view to_string(T value);
 
 template<typename T>
-T from_string(std::string_view s);
+inline constexpr T from_string(std::string_view s);
 
 using namespace std::literals::string_view_literals;
 
@@ -33,27 +33,27 @@ constexpr size_t n_enum_members<{{ full_name }}> = {{ n_fields }};
 template<>
 constexpr std::array<std::pair<std::string_view, {{ full_name }}>, {{ n_fields }}> enum_members<{{ full_name }}> = { {
     {% for f in enum.fields -%}
-        {"{{ f }}", {{ full_name }}::{{ f }}},
+        {"{{ f }}"sv, {{ full_name }}::{{ f }}},
     {% endfor -%}
 } };
 
 template<>
-constexpr std::string to_string<{{ full_name }}>({{ full_name }} value)
+inline constexpr std::string_view to_string<{{ full_name }}>({{ full_name }} value)
 {
-    const auto &m = enum_members<{{ full_name }}>;
+    constexpr auto &m = enum_members<{{ full_name }}>;
 
     const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
 
     if (it == m.end()) {
         throw std::range_error("out of range value for {{ enum.name }}");
     }
-    return std::string(it->first);
+    return it->first;
 }
 
 template<>
-constexpr {{ full_name }} from_string<{{ full_name }}>(std::string_view s)
+inline constexpr {{ full_name }} from_string<{{ full_name }}>(std::string_view s)
 {
-    const auto &m = enum_members<{{ full_name }}>;
+    constexpr auto &m = enum_members<{{ full_name }}>;
 
     const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
 
@@ -68,12 +68,12 @@ namespace {{ enum.namespace }} {
 
 {% endif %}
 
-std::ostream &operator<<(std::ostream& os, const {{ enum.name }}& e)
+std::ostream inline &operator<<(std::ostream& os, const {{ enum.name }}& e)
 {
     return os << to_string(e);
 }
 
-std::istream &operator>>(std::istream& is, {{ enum.name }}& e)
+std::istream inline &operator>>(std::istream& is, {{ enum.name }}& e)
 {
     std::string s;
     is >> s;
