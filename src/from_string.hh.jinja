@@ -14,14 +14,17 @@ std::array<std::pair<const char *, T>, n_enum_fields<T>> enum_fields;
 
 {% for enum in enums %}
 
-template<>
-constexpr size_t n_enum_fields<{{ enum.namespace }}::{{ enum.enum_name }}> = {{ enum.enum_fields|length }};
+{%- set n_fields = enum.fields | length -%}
+{%- set full_name = enum.namespace + '::' + enum.name if enum.namespace else enum.name -%}
 
 template<>
-constexpr std::array<std::pair<const char *, {{ enum.namespace }}::{{ enum.enum_name }}>, {{ enum.enum_fields|length }}> enum_fields<{{ enum.namespace }}::{{ enum.enum_name }}> = { {
-    {% for f in enum.enum_fields %}
-        {"{{ f }}", {{ enum.namespace }}::{{ enum.enum_name }}::{{ f }}},
-    {% endfor %}
+constexpr size_t n_enum_fields<{{ full_name }}> = {{ n_fields }};
+
+template<>
+constexpr std::array<std::pair<const char *, {{ full_name }}>, {{ n_fields }}> enum_fields<{{ full_name }}> = { {
+    {% for f in enum.fields -%}
+        {"{{ f }}", {{ full_name }}::{{ f }}},
+    {% endfor -%}
 } };
 
 {% if enum.namespace -%}
@@ -29,28 +32,28 @@ namespace {{ enum.namespace }} {
 
 {% endif -%}
 
-std::ostream& operator<<(std::ostream& os, const {{ enum.enum_name }}& e)
+std::ostream& operator<<(std::ostream& os, const {{ enum.name }}& e)
 {
     switch (e) {
-    {% for f in enum.enum_fields -%}
-    case {{ enum.enum_name }}::{{ f }}:
+    {% for f in enum.fields -%}
+    case {{ enum.name }}::{{ f }}:
         return os << "{{ f }}";
         break;
     {% endfor -%}
     }
-    throw std::range_error("out of range value for {{ enum.enum_name }}");
+    throw std::range_error("out of range value for {{ enum.name }}");
 }
 
-std::istream& operator>>(std::istream& is, {{ enum.enum_name }}& e)
+std::istream& operator>>(std::istream& is, {{ enum.name }}& e)
 {
-    const auto &m = enum_fields<{{ enum.enum_name }}>;
+    const auto &m = enum_fields<{{ enum.name }}>;
 
     std::string s;
     is >> s;
     const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
 
     if (it == m.end()) {
-        throw std::range_error("could not read {{ enum.enum_name }} from stream");
+        throw std::range_error("could not read {{ enum.name }} from stream");
     }
     e = it->second;
     return is;
@@ -60,5 +63,4 @@ std::istream& operator>>(std::istream& is, {{ enum.enum_name }}& e)
 
 }  // {{ enum.namespace }}
 {%- endif %}
-
 {% endfor %}

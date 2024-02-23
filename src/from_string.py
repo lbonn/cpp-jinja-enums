@@ -48,8 +48,8 @@ def get_enum_props(ecursor):
 
     return {
         "namespace": namespace,
-        "enum_name": ecursor.spelling,
-        "enum_fields": fields,
+        "name": ecursor.spelling,
+        "fields": fields,
     }
 
 
