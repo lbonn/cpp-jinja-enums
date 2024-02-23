@@ -4,21 +4,69 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
+#include <format>
 #include <iostream>
 #include <string>
 #include <string_view>
 
 template<typename T>
-size_t n_enum_members;
+struct IsStringEnum : std::false_type{};
 
 template<typename T>
-std::array<std::pair<const char *, T>, n_enum_members<T>> enum_members;
+concept string_enum = IsStringEnum<T>::value;
 
-template<typename T>
-inline constexpr std::string_view to_string(T value);
+template<string_enum T>
+constexpr size_t n_enum_members;
 
-template<typename T>
-inline constexpr T from_string(std::string_view s);
+template<string_enum T>
+constexpr std::string_view enum_name;
+
+template<string_enum T>
+constexpr std::array<std::pair<std::string_view, T>, n_enum_members<T>> enum_members;
+
+template<string_enum T>
+static inline constexpr std::string_view to_string(T value)
+{
+    constexpr auto &m = enum_members<T>;
+
+    const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
+
+    if (it == m.end()) {
+        throw std::range_error(std::format("out of range value for {}", enum_name<T>));
+    }
+    return it->first;
+}
+
+template<string_enum T>
+static inline constexpr T from_string(std::string_view s)
+{
+    constexpr auto &m = enum_members<T>;
+
+    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
+
+    if (it == m.end()) {
+        throw std::range_error(std::format("could not read {} from string", std::string(enum_name<T>)));
+    }
+    return it->second;
+}
+
+template<string_enum T>
+static std::ostream inline &operator<<(std::ostream& os, const T& e)
+{
+    return os << to_string<T>(e);
+}
+
+template<string_enum T>
+static std::istream inline &operator>>(std::istream& is, T& e)
+{
+    std::string s;
+    is >> s;
+
+    e = from_string<T>(s);
+
+    return is;
+}
 
 using namespace std::literals::string_view_literals;
 
@@ -27,61 +75,29 @@ using namespace std::literals::string_view_literals;
 {% set n_fields = enum.fields | length %}
 {% set full_name = enum.namespace + '::' + enum.name if enum.namespace else enum.name %}
 
-template<>
-constexpr size_t n_enum_members<{{ full_name }}> = {{ n_fields }};
+// definition for {{ full_name }}
+//
 
 template<>
-constexpr std::array<std::pair<std::string_view, {{ full_name }}>, {{ n_fields }}> enum_members<{{ full_name }}> = { {
+struct IsStringEnum<{{ full_name }}> : std::true_type {};
+
+template<>
+constexpr size_t n_enum_members<{{ full_name }}>{ {{ n_fields }} };
+
+template<>
+constexpr std::string_view enum_name<{{ full_name }}> = "{{ enum.name }}";
+
+template<>
+constexpr std::array<std::pair<std::string_view, {{ full_name }}>, n_enum_members<{{ full_name }}>> enum_members<{{ full_name }}> = { {
     {% for f in enum.fields -%}
         {"{{ f }}"sv, {{ full_name }}::{{ f }}},
     {% endfor -%}
 } };
 
-template<>
-inline constexpr std::string_view to_string<{{ full_name }}>({{ full_name }} value)
-{
-    constexpr auto &m = enum_members<{{ full_name }}>;
-
-    const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
-
-    if (it == m.end()) {
-        throw std::range_error("out of range value for {{ enum.name }}");
-    }
-    return it->first;
-}
-
-template<>
-inline constexpr {{ full_name }} from_string<{{ full_name }}>(std::string_view s)
-{
-    constexpr auto &m = enum_members<{{ full_name }}>;
-
-    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
-
-    if (it == m.end()) {
-        throw std::range_error("could not read {{ enum.name }} from string");
-    }
-    return it->second;
-}
-
 {% if enum.namespace %}
 namespace {{ enum.namespace }} {
 
 {% endif %}
-
-std::ostream inline &operator<<(std::ostream& os, const {{ enum.name }}& e)
-{
-    return os << to_string(e);
-}
-
-std::istream inline &operator>>(std::istream& is, {{ enum.name }}& e)
-{
-    std::string s;
-    is >> s;
-
-    e = from_string<{{ enum.name }}>(s);
-
-    return is;
-}
 
 {% if enum.namespace %}
 
