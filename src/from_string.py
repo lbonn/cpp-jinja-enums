@@ -4,10 +4,11 @@ import argparse
 import clang.cindex
 import jinja2
 import os
+import subprocess
 import sys
+import tempfile
 
 from clang.cindex import CursorKind
-
 
 
 def has_annotation(cursor):
@@ -61,12 +62,34 @@ def generate_all_enums_code(enums, output):
     props = {
         "enums": [get_enum_props(e) for e in enums],
     }
-    print(template.render(**props), file=output)
+
+    return template.render(**props)
+
+
+def write_output(code, output, should_format):
+    if not should_format:
+        print(code, file=output)
+        return
+
+    # note: we don't use the default context manager to control the file lifetime
+    # python 3.12 has `delete_on_close`
+    tmpf = tempfile.NamedTemporaryFile(mode='w', suffix='.hh', delete=False)
+    try:
+        print(code, file=tmpf.file)
+        tmpf.close()
+
+        subprocess.run(["clang-format", "-i", tmpf.name])
+
+        with open(tmpf.name) as file_r:
+            print(file_r.read(), file=output)
+    finally:
+        os.remove(tmpf.name)
 
 
 def main():
     parser = argparse.ArgumentParser(prog="from_string")
     parser.add_argument("input", metavar="INPUT", type=str)
+    parser.add_argument("--format", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("-o", "--output", type=argparse.FileType('w'),
                         default=sys.stdout)
     parser.add_argument("compile_opts", nargs="*")
@@ -83,7 +106,9 @@ def main():
 
     enums = get_target_enums(tu)
 
-    generate_all_enums_code(enums, args.output)
+    code = generate_all_enums_code(enums, args.output)
+
+    write_output(code, args.output, args.format)
 
     return 0
 
