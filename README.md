@@ -45,7 +45,13 @@ Advantages:
 * reflection!
 * type declaration is a normal C++ enum in the code
 * writing (jinja) templated code is almost like writing regular C++ code, no dark pre-processor magic required
+* easy to integrate in existing project with custom "templates"
 
-## Other attempts
 
-[serde-cpp](https://github.com/serde-cpp/serde-cpp) is using an external parser cppast and the generator is in C++ itself. That looks promising but it is more difficult to re-purpose
+Still Annoying:
+
+* we cannot use a plain C++ attribute `[[from_string]]` as libclang only exposes the attributes it knows about. But we can re-purpose [`clang::annotate`](https://clang.llvm.org/docs/AttributeReference.html#annotate).
+
+## See also
+
+[serde-cpp](https://github.com/serde-cpp/serde-cpp) follows the same approach but uses an external parser, cppast, which does not have the limitation around unknown attributes. The generator is in C++ itself, it seems intended to be used as a standalone serialization library, not as a repurposeable building block to include in another project.
