@@ -54,4 +54,5 @@ Still Annoying:
 
 ## See also
 
-[serde-cpp](https://github.com/serde-cpp/serde-cpp) follows the same approach but uses an external parser, cppast, which does not have the limitation around unknown attributes. The generator is in C++ itself, it seems intended to be used as a standalone serialization library, not as a repurposeable building block to include in another project.
+* [serde-cpp](https://github.com/serde-cpp/serde-cpp) follows the same approach but uses an external parser, cppast, which does not have the limitation around unknown attributes. The generator is in C++ itself, it seems intended to be used as a standalone serialization library, not as a repurposeable building block to include in another project.
+* open proposals for reflection in C++: [N4856](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/n4856.pdf) and [P1240R2](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p1240r2.pdf)

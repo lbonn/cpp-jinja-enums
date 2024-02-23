@@ -17,12 +17,13 @@ TEST(EnumFromString, Simple) {
         ss >> msg;
         EXPECT_EQ(msg, ipc::Message::PONG);
     }
+
+    EXPECT_EQ(to_string(ipc::Message::PONG), "PONG");
+    EXPECT_EQ(ipc::Message::PONG, from_string<ipc::Message>("PONG"));
 }
 
 TEST(EnumFromString, Fields) {
-    for (const auto &f : enum_fields<ipc::Message>) {
-        std::stringstream ss;
-        ss << f.second;
-        EXPECT_EQ(ss.str(), f.first);
+    for (const auto &f : enum_members<ipc::Message>) {
+        EXPECT_EQ(f.first, to_string(f.second));
     }
 }

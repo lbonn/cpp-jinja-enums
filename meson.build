@@ -1,6 +1,6 @@
 project('cpp-jinja-enums', 'cpp',
   default_options: {
-    'cpp_std': 'gnu++17',
+    'cpp_std': 'gnu++20',
     'warning_level': '2',
   },
 )

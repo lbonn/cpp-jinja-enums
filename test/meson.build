@@ -7,7 +7,7 @@ enum_from_string_to_string_h = custom_target(
   output : 'enum_from_string_to_string.hh',
   input : [from_string_script, from_string_template, 'enum_from_string/enum_from_string.hh'],
   # FIXME: is it possible to pass flags from meson?
-  command : [prog_python, '@INPUT0@', '@INPUT2@', '-std=gnu++17', '-o', '@OUTPUT@'],
+  command : [prog_python, '@INPUT0@', '@INPUT2@', '-std=gnu++20', '-o', '@OUTPUT@'],
 )
 
 test('all', executable('runTests', [

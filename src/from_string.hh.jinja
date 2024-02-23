@@ -5,12 +5,21 @@
 #include <iostream>
 #include <array>
 #include <string>
+#include <string_view>
 
 template<typename T>
-size_t n_enum_fields;
+size_t n_enum_members;
 
 template<typename T>
-std::array<std::pair<const char *, T>, n_enum_fields<T>> enum_fields;
+std::array<std::pair<const char *, T>, n_enum_members<T>> enum_members;
+
+template<typename T>
+std::string to_string(T value);
+
+template<typename T>
+T from_string(std::string_view s);
+
+using namespace std::literals::string_view_literals;
 
 {% for enum in enums %}
 
@@ -18,14 +27,40 @@ std::array<std::pair<const char *, T>, n_enum_fields<T>> enum_fields;
 {% set full_name = enum.namespace + '::' + enum.name if enum.namespace else enum.name %}
 
 template<>
-constexpr size_t n_enum_fields<{{ full_name }}> = {{ n_fields }};
+constexpr size_t n_enum_members<{{ full_name }}> = {{ n_fields }};
 
 template<>
-constexpr std::array<std::pair<const char *, {{ full_name }}>, {{ n_fields }}> enum_fields<{{ full_name }}> = { {
+constexpr std::array<std::pair<std::string_view, {{ full_name }}>, {{ n_fields }}> enum_members<{{ full_name }}> = { {
     {% for f in enum.fields -%}
         {"{{ f }}", {{ full_name }}::{{ f }}},
     {% endfor -%}
 } };
+
+template<>
+constexpr std::string to_string<{{ full_name }}>({{ full_name }} value)
+{
+    const auto &m = enum_members<{{ full_name }}>;
+
+    const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
+
+    if (it == m.end()) {
+        throw std::range_error("out of range value for {{ enum.name }}");
+    }
+    return std::string(it->first);
+}
+
+template<>
+constexpr {{ full_name }} from_string<{{ full_name }}>(std::string_view s)
+{
+    const auto &m = enum_members<{{ full_name }}>;
+
+    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
+
+    if (it == m.end()) {
+        throw std::range_error("could not read {{ enum.name }} from string");
+    }
+    return it->second;
+}
 
 {% if enum.namespace %}
 namespace {{ enum.namespace }} {
@@ -34,33 +69,21 @@ namespace {{ enum.namespace }} {
 
 std::ostream &operator<<(std::ostream& os, const {{ enum.name }}& e)
 {
-    switch (e) {
-    {% for f in enum.fields -%}
-    case {{ enum.name }}::{{ f }}:
-        return os << "{{ f }}";
-        break;
-    {% endfor -%}
-    }
-    throw std::range_error("out of range value for {{ enum.name }}");
+    return os << to_string(e);
 }
 
 std::istream &operator>>(std::istream& is, {{ enum.name }}& e)
 {
-    const auto &m = enum_fields<{{ enum.name }}>;
-
     std::string s;
     is >> s;
-    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
 
-    if (it == m.end()) {
-        throw std::range_error("could not read {{ enum.name }} from stream");
-    }
-    e = it->second;
+    e = from_string<{{ enum.name }}>(s);
+
     return is;
 }
 
 {% if enum.namespace %}
 
-}  // {{ enum.namespace }}
+}  // namespace {{ enum.namespace }}
 {% endif %}
 {% endfor %}
