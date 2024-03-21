@@ -15,7 +15,8 @@ test('all', executable('runTests', [
     'enum_from_string/enum_from_string.cc',
     enum_from_string_to_string_h,
   ],
-  dependencies : [
+  dependencies: [
     gtest.get_variable('gtest_dep'),
-  ]
+    enum_spec,
+  ],
 ))

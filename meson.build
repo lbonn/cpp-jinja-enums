@@ -7,6 +7,8 @@ project('cpp-jinja-enums', 'cpp',
 
 add_project_arguments('-Wno-attributes', language: 'cpp')
 
+enum_spec = declare_dependency(include_directories: ['src'])
+
 from_string_script = files('src/from_string.py')
 from_string_template = files('src/from_string.hh.jinja')
 

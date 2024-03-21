@@ -23,7 +23,7 @@ TEST(EnumFromString, Simple) {
 }
 
 TEST(EnumFromString, Fields) {
-    for (const auto &f : enum_members<ipc::Message>) {
+    for (const auto &f : enum_spec<ipc::Message>::members) {
         EXPECT_EQ(f.first, to_string(f.second));
     }
 }

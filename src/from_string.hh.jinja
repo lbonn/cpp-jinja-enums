@@ -2,97 +2,28 @@
 
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <concepts>
-#include <format>
-#include <iostream>
-#include <string>
-#include <string_view>
-
-template<typename T>
-struct IsStringEnum : std::false_type{};
-
-template<typename T>
-concept string_enum = IsStringEnum<T>::value;
-
-template<string_enum T>
-constexpr size_t n_enum_members;
-
-template<string_enum T>
-constexpr std::string_view enum_name;
-
-template<string_enum T>
-constexpr std::array<std::pair<std::string_view, T>, n_enum_members<T>> enum_members;
-
-template<string_enum T>
-static inline constexpr std::string_view to_string(T value)
-{
-    constexpr auto &m = enum_members<T>;
-
-    const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
-
-    if (it == m.end()) {
-        throw std::range_error(std::format("out of range value for {}", enum_name<T>));
-    }
-    return it->first;
-}
-
-template<string_enum T>
-static inline constexpr T from_string(std::string_view s)
-{
-    constexpr auto &m = enum_members<T>;
-
-    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
-
-    if (it == m.end()) {
-        throw std::range_error(std::format("could not read {} from string", std::string(enum_name<T>)));
-    }
-    return it->second;
-}
-
-template<string_enum T>
-static std::ostream inline &operator<<(std::ostream& os, const T& e)
-{
-    return os << to_string<T>(e);
-}
-
-template<string_enum T>
-static std::istream inline &operator>>(std::istream& is, T& e)
-{
-    std::string s;
-    is >> s;
-
-    e = from_string<T>(s);
-
-    return is;
-}
-
-using namespace std::literals::string_view_literals;
+#include "enum_spec.hh"
 
 {% for enum in enums %}
 
 {% set n_fields = enum.fields | length %}
 {% set full_name = enum.namespace + '::' + enum.name if enum.namespace else enum.name %}
 
-// definition for {{ full_name }}
-//
+// spec definition for {{ full_name }}
 
 template<>
-struct IsStringEnum<{{ full_name }}> : std::true_type {};
+struct enum_spec<{{ full_name }}> {
+    using enum {{ full_name }};
 
-template<>
-constexpr size_t n_enum_members<{{ full_name }}>{ {{ n_fields }} };
+    static constexpr std::string_view name = "{{ enum.name }}";
+    static constexpr size_t n_members = {{ n_fields }};
+    static constexpr std::array<std::pair<std::string_view, {{ full_name }}>, {{ n_fields }}> members = { {
+        {% for f in enum.fields -%}
+            {"{{ f }}", {{ f }} },
+        {% endfor -%}
+    } };
+};
 
-template<>
-constexpr std::string_view enum_name<{{ full_name }}> = "{{ enum.name }}";
-
-template<>
-constexpr std::array<std::pair<std::string_view, {{ full_name }}>, n_enum_members<{{ full_name }}>> enum_members<{{ full_name }}> = { {
-    {% for f in enum.fields -%}
-        {"{{ f }}"sv, {{ full_name }}::{{ f }}},
-    {% endfor -%}
-} };
 
 {% if enum.namespace %}
 namespace {{ enum.namespace }} {
