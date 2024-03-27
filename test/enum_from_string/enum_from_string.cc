@@ -1,4 +1,3 @@
-#include <iostream>
 #include <gtest/gtest.h>
 
 #include "enum_from_string.hh"
@@ -26,4 +25,9 @@ TEST(EnumFromString, Fields) {
     for (const auto &f : enum_spec<ipc::Message>::members) {
         EXPECT_EQ(f.first, to_string(f.second));
     }
+}
+
+TEST(EnumFromString, StdFormat) {
+    auto r = std::format("{}", ipc::Message::PONG);
+    EXPECT_EQ(r, "PONG");
 }

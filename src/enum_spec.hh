@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts>
 #include <format>
 #include <iostream>
 #include <string>
@@ -23,7 +22,7 @@ static inline constexpr std::string_view to_string(En value)
 {
     constexpr auto &m = enum_spec<En>::members;
 
-    const auto it = std::find_if(m.begin(), m.end(), [&value](const auto &v) { return v.second == value; });
+    const auto it = std::ranges::find(m, value, &std::pair<std::string_view, En>::second);
 
     if (it == m.end()) {
         throw std::range_error(std::format("out of range value for {}", enum_spec<En>::name));
@@ -36,7 +35,7 @@ static inline constexpr En from_string(std::string_view s)
 {
     constexpr auto &m = enum_spec<En>::members;
 
-    const auto it = std::find_if(m.begin(), m.end(), [&s](const auto &v) { return v.first == s; });
+    const auto it = std::ranges::find(m, s, &std::pair<std::string_view, En>::first);
 
     if (it == m.end()) {
         throw std::range_error(std::format("could not read {} from string", std::string(enum_spec<En>::name)));
@@ -60,3 +59,18 @@ static std::istream inline &operator>>(std::istream& is, T& e)
 
     return is;
 }
+
+template<string_enum T>
+struct std::formatter<T> {
+    template<class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext& ctx)
+    {
+        return ctx.end();
+    }
+
+    template<class FmtContext>
+    FmtContext::iterator format(const T& s, FmtContext& ctx) const
+    {
+        return std::format_to(ctx.out(), "{}", ::to_string<T>(s));
+    }
+};
