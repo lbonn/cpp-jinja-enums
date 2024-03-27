@@ -24,14 +24,4 @@ struct enum_spec<{{ full_name }}> {
     } };
 };
 
-
-{% if enum.namespace %}
-namespace {{ enum.namespace }} {
-
-{% endif %}
-
-{% if enum.namespace %}
-
-}  // namespace {{ enum.namespace }}
-{% endif %}
 {% endfor %}
